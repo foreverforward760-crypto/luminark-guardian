@@ -81,7 +81,7 @@ app = FastAPI(
         "Set the `LUMINARK_API_KEYS` environment variable to enable key enforcement. "
         "If not set, the API runs in open/demo mode."
     ),
-    version     = "1.1.0",
+    version     = "1.2.0",
     contact     = {"name": "LUMINARK", "url": "https://github.com/luminark/guardian"},
     license_info= {"name": "MIT"},
 )
@@ -160,7 +160,7 @@ class BatchResponse(BaseModel):
 def root():
     return {
         "service": "LUMINARK Ethical AI Guardian",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "status":  "online",
         "auth_mode": "open/demo" if OPEN_MODE else "api-key-required",
         "docs":    "/docs",

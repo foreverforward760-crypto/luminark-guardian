@@ -600,7 +600,7 @@ with tab3:
 
 st.markdown("""
 <div class="lum-footer">
-    🌿 LUMINARK Ethical AI Guardian v1.1 &nbsp;·&nbsp;
+    🌿 LUMINARK Ethical AI Guardian v1.2 &nbsp;·&nbsp;
     Bio-inspired · Ma'at-audited · SAP-staged · Compassionate AI safety &nbsp;·&nbsp;
     42 Principles Active &nbsp;·&nbsp;
     <a href="https://github.com/luminark/guardian" style="color:#58a6ff;">GitHub</a>
