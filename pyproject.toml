@@ -1,0 +1,44 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name        = "luminark-guardian"
+version     = "1.0.0"
+description = "Bio-inspired Ethical AI Guardian — Ma'at auditing, hallucination detection, compassionate rewrites"
+readme      = "README.md"
+license     = {text = "MIT"}
+requires-python = ">=3.10"
+keywords    = ["ai-safety", "ethics", "hallucination-detection", "bias-detection", "nlp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.0.0",
+    "streamlit>=1.32.0",
+    "plotly>=5.18.0",
+    "pandas>=2.0.0",
+    "python-multipart>=0.0.9",
+]
+
+[project.scripts]
+luminark     = "luminark.__main__:main"
+luminark-api = "api.main:run"
+
+[project.urls]
+Homepage   = "https://github.com/luminark/guardian"
+Repository = "https://github.com/luminark/guardian"
+Issues     = "https://github.com/luminark/guardian/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["luminark*", "api*", "dashboard*"]
