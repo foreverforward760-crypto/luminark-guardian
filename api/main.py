@@ -2,6 +2,12 @@
 LUMINARK Ethical AI Guardian — FastAPI Backend
 Run: uvicorn api.main:app --reload --port 8000
 Docs: http://localhost:8000/docs
+
+API KEY AUTH:
+  Set environment variable LUMINARK_API_KEYS as a comma-separated list of valid keys.
+  Example: export LUMINARK_API_KEYS="key-abc123,key-xyz789"
+  If LUMINARK_API_KEYS is not set, the API runs in open/demo mode (no auth required).
+  Clients must send: Authorization: Bearer <your-api-key>
 """
 
 from __future__ import annotations
@@ -9,8 +15,9 @@ from __future__ import annotations
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Request
+from typing import List, Optional, Set
+from fastapi import FastAPI, HTTPException, Request, Security, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -19,6 +26,45 @@ from luminark import LuminarkGuardian
 from luminark.report import (
     generate_text_report, generate_markdown_report, batch_to_csv
 )
+
+# ─────────────────────────────────────────────
+#  API Key Management
+# ─────────────────────────────────────────────
+
+def _load_api_keys() -> Set[str]:
+    """Load valid API keys from environment variable LUMINARK_API_KEYS."""
+    raw = os.environ.get("LUMINARK_API_KEYS", "").strip()
+    if not raw:
+        return set()  # Empty set = open/demo mode
+    return {k.strip() for k in raw.split(",") if k.strip()}
+
+VALID_API_KEYS: Set[str] = _load_api_keys()
+OPEN_MODE: bool = len(VALID_API_KEYS) == 0
+
+_bearer = HTTPBearer(auto_error=False)
+
+def require_api_key(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(_bearer),
+) -> str:
+    """
+    Dependency that enforces API key auth when LUMINARK_API_KEYS is set.
+    In open/demo mode (no keys configured) all requests are allowed.
+    """
+    if OPEN_MODE:
+        return "demo"   # No auth required
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=401,
+            detail="Missing API key. Send: Authorization: Bearer <your-key>",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if credentials.credentials not in VALID_API_KEYS:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 # ─────────────────────────────────────────────
 #  App setup
@@ -30,9 +76,12 @@ app = FastAPI(
         "Bio-inspired AI safety auditor. Analyzes text/AI outputs for "
         "misalignment, hallucinations, deception, harm, and arrogance. "
         "Returns risk scores, Ma'at violations, bio-defense status, and "
-        "compassionate rewrites."
+        "compassionate rewrites.\n\n"
+        "**Authentication:** Protected endpoints require `Authorization: Bearer <api-key>`. "
+        "Set the `LUMINARK_API_KEYS` environment variable to enable key enforcement. "
+        "If not set, the API runs in open/demo mode."
     ),
-    version     = "1.0.0",
+    version     = "1.1.0",
     contact     = {"name": "LUMINARK", "url": "https://github.com/luminark/guardian"},
     license_info= {"name": "MIT"},
 )
@@ -111,8 +160,9 @@ class BatchResponse(BaseModel):
 def root():
     return {
         "service": "LUMINARK Ethical AI Guardian",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "status":  "online",
+        "auth_mode": "open/demo" if OPEN_MODE else "api-key-required",
         "docs":    "/docs",
     }
 
@@ -122,8 +172,21 @@ def health():
     return {"status": "healthy"}
 
 
+@app.get("/auth-status", tags=["meta"])
+def auth_status():
+    """Check whether the API is running in open/demo mode or requires API keys."""
+    return {
+        "auth_required": not OPEN_MODE,
+        "mode": "open/demo — no key required" if OPEN_MODE else "api-key-required",
+        "instructions": (
+            "No authentication required." if OPEN_MODE
+            else "Send header: Authorization: Bearer <your-api-key>"
+        ),
+    }
+
+
 @app.post("/analyze", tags=["core"])
-def analyze(req: AnalyzeRequest, request: Request):
+def analyze(req: AnalyzeRequest, request: Request, _key: str = Depends(require_api_key)):
     """
     Analyze a single text for ethical/safety violations.
 
@@ -149,7 +212,7 @@ def analyze(req: AnalyzeRequest, request: Request):
 
 
 @app.post("/batch", tags=["core"])
-def batch_analyze(req: BatchRequest):
+def batch_analyze(req: BatchRequest, _key: str = Depends(require_api_key)):
     """
     Analyze up to 100 texts in one call.
     Returns summary counts + per-item badge/score/violations.
@@ -185,7 +248,7 @@ def batch_analyze(req: BatchRequest):
 
 
 @app.post("/batch/csv", tags=["core"], response_class=Response)
-def batch_csv(req: BatchRequest):
+def batch_csv(req: BatchRequest, _key: str = Depends(require_api_key)):
     """Analyze up to 100 texts and return results as a CSV download."""
     results = [_guardian.analyze(t) for t in req.texts]
     csv_data = batch_to_csv(results)

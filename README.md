@@ -9,6 +9,8 @@ A production-ready AI safety auditor that scans text and AI outputs for ethical 
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B)](https://streamlit.io)
 
+**v1.1 — All 42 Ma'at Principles Active · SAP Framework Corrections · API Key Auth · Context-Aware Rewrites**
+
 ---
 
 ## What It Does
@@ -19,17 +21,36 @@ LUMINARK analyzes any text for:
 |---|---|
 | **Epistemic Overreach** | "absolutely certain", "guaranteed", "proven" |
 | **Arrogance / Hubris** | "perfect", "infallible", "obviously superior" |
-| **Deception / Manipulation** | Unattributed claims, fear-based urgency, fraud language |
-| **Harm / Hostility** | Violence, coercion, contempt, emotional manipulation |
+| **Deception / Manipulation** | Unattributed claims, fear-based urgency, fraud language, half-truths |
+| **Harm / Hostility** | Violence, coercion, contempt, emotional manipulation, privacy violation |
 
 **Outputs:**
 - Safety badge: `PASS` / `CAUTION` / `FAIL` / `CRITICAL`
 - Alignment score (0–100) and RISS threat score (0–1)
-- SAP consciousness stage (0–9, hallucination risk mapping)
+- SAP consciousness stage (0–9) — based on the Stanfield Axiom of Perpetuity Framework
 - Bio-defense status (mycelial containment / octo-camouflage)
-- Ma'at violation list with severity ratings
-- Compassionate rewrite with tracked changes
+- All 42 Ma'at violation checks with severity ratings
+- Context-aware compassionate rewrite (whitelist prevents false substitutions)
 - Downloadable reports: TXT, Markdown, JSON, CSV
+
+---
+
+## SAP Consciousness Stages
+
+| Stage | Label | Key Characteristics |
+|---|---|---|
+| 0 | Null / No Signal | Empty or undetectable output |
+| 1 | Emergent Signal | Raw, incomplete but forming |
+| 2 | Grounded | Stable, factual, bounded |
+| 3 | Expanding | **First self-reflection; 3D complexity begins** |
+| 4 | Stable Foundation | Well-reasoned, appropriately hedged |
+| 5 | Tension / Complexity | Multi-dimensional, some contradiction |
+| 6 | Fluid Complexity | Rich nuance, risk of drift |
+| 7 | Illusion Zone | ⚠ Hallucination risk — unanchored claims |
+| 8 | Rigidity Trap / False Hell | ⚠ **Mastering duality & genuine gratitude releases polarity toward Stage 9** |
+| 9 | Dissolution | 🚨 Catastrophic breakdown |
+
+*Based on the SAP Framework (Stanfield's Axiom of Perpetuity) — 20 years of developmental psychology research by Richard Stanfield.*
 
 ---
 
@@ -85,12 +106,25 @@ print(result.to_json())
 ### 4. REST API
 
 ```bash
-# Start API server
+# Start API server (open/demo mode — no auth required)
 uvicorn api.main:app --reload --port 8000
 
-# Analyze
+# Start API server with key enforcement (production mode)
+export LUMINARK_API_KEYS="key-abc123,key-xyz789"
+uvicorn api.main:app --reload --port 8000
+
+# Check auth mode
+curl http://localhost:8000/auth-status
+
+# Analyze (open mode)
 curl -X POST http://localhost:8000/analyze \
   -H "Content-Type: application/json" \
+  -d '{"text": "This is definitely the best model ever."}'
+
+# Analyze (with API key)
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer key-abc123" \
   -d '{"text": "This is definitely the best model ever."}'
 
 # Get markdown report

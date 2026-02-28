@@ -30,12 +30,12 @@ class SAPStage(Enum):
     VOID        = (0, "Null / No Signal",      "Output is empty or undetectable.")
     SEED        = (1, "Emergent Signal",        "Early, raw output — incomplete but forming.")
     ROOT        = (2, "Grounded",               "Stable base — factual, bounded.")
-    GROWTH      = (3, "Expanding",              "Broadening context — moderate confidence.")
+    GROWTH      = (3, "Expanding",              "First self-reflection emerges; 3D complexity begins. Broadening context — moderate confidence.")
     FOUNDATION  = (4, "Stable Foundation",      "Well-reasoned, appropriately hedged.")
     TENSION     = (5, "Tension / Complexity",   "Multi-dimensional — some contradiction.")
     FLUIDITY    = (6, "Fluid Complexity",       "Rich nuance — risk of drift.")
     ILLUSION    = (7, "Illusion Zone",          "Hallucination risk — unanchored claims.")
-    RIGIDITY    = (8, "Rigidity Trap",          "Overconfidence — refuses correction.")
+    RIGIDITY    = (8, "Rigidity Trap / False Hell", "Overconfidence and false hell state — refuses correction. Mastering duality and genuine gratitude releases polarity and opens path toward Stage 9.")
     DISSOLUTION = (9, "Dissolution",            "Catastrophic breakdown — incoherent.")
 
     def __new__(cls, value, label, description):
@@ -232,31 +232,88 @@ REWRITE_MAP: Dict[str, str] = {
 
 
 class RewriteEngine:
+    """
+    Applies compassionate rewrites to flagged text.
+    Uses a whitelist to protect legitimate phrases from false-positive substitution.
+    For example, 'eliminate poverty' or 'destroy a myth' should not be rewritten.
+    """
+
+    # Phrases where a flagged term appears in a clearly benign/positive context.
+    # If any whitelist phrase is found in the sentence being rewritten, that
+    # sentence is skipped entirely rather than risk a misleading substitution.
+    WHITELIST_CONTEXTS = [
+        # Benign uses of 'eliminate'
+        r"eliminate\s+(poverty|hunger|disease|inequality|bias|discrimination|waste|barriers|suffering|racism|homelessness|debt|inefficiency)",
+        # Benign uses of 'destroy'
+        r"destroy\s+(a\s+)?(myth|stereotype|misconception|barrier|stigma|inequality|record)",
+        # Benign uses of 'crush'
+        r"crush\s+(a\s+)?(goal|record|deadline|it)",
+        # Benign uses of 'kill'
+        r"kill\s+(it|the\s+competition\s+in\s+a\s+healthy|bacteria|germs|viruses|pathogens)",
+        # Epistemic phrases that look like overreach but aren't
+        r"(science|research|data|evidence)\s+clearly\s+(shows|demonstrates|supports|indicates)",
+        r"it\s+is\s+clearly\s+(labeled|documented|stated|visible|written)",
+        # Common positive idioms
+        r"obviously\s+(we\s+care|they\s+worked\s+hard|much\s+effort)",
+        r"always\s+(here\s+to\s+help|available|open\s+to\s+feedback)",
+        r"never\s+(give\s+up|stop\s+learning|stop\s+improving|abandon)",
+        # Attribution that's already correct
+        r"according\s+to\s+(the|a|this|their|our)\s+\w+",
+        r"studies\s+(suggest|indicate|show\s+mixed|have\s+found\s+that\s+some)",
+    ]
+
     def __init__(self):
         self._compiled = [
             (re.compile(pattern, re.IGNORECASE), replacement)
             for pattern, replacement in REWRITE_MAP.items()
         ]
+        self._whitelist = [
+            re.compile(p, re.IGNORECASE) for p in self.WHITELIST_CONTEXTS
+        ]
+
+    def _sentence_is_whitelisted(self, sentence: str) -> bool:
+        """Return True if the sentence matches a benign-context whitelist pattern."""
+        for pattern in self._whitelist:
+            if pattern.search(sentence):
+                return True
+        return False
 
     def rewrite(self, text: str, violations: List[Violation]) -> Tuple[str, List[str]]:
-        """Apply compassionate rewrites. Returns (rewritten_text, list_of_changes)."""
+        """
+        Apply compassionate rewrites sentence by sentence.
+        Skips sentences that match a whitelist context to prevent false substitutions.
+        Returns (rewritten_text, list_of_changes).
+        """
         if not violations:
             return text, []
 
-        result = text
+        # Split into sentences for context-aware processing
+        sentence_pattern = re.compile(r'(?<=[.!?])\s+')
+        sentences = sentence_pattern.split(text.strip())
+        rewritten_sentences = []
         changes: List[str] = []
-        for pattern, replacement in self._compiled:
-            match = pattern.search(result)
-            if match:
-                original_term = match.group(0)
-                result = pattern.sub(
-                    lambda m, r=replacement: r[0].upper() + r[1:] if m.group(0)[0].isupper() else r,
-                    result
-                )
-                if result != text:
-                    changes.append(f'"{original_term}" → "{replacement}"')
 
-        return result, list(dict.fromkeys(changes))  # Deduplicate
+        for sentence in sentences:
+            if self._sentence_is_whitelisted(sentence):
+                rewritten_sentences.append(sentence)
+                continue
+
+            result_sentence = sentence
+            for pattern, replacement in self._compiled:
+                match = pattern.search(result_sentence)
+                if match:
+                    original_term = match.group(0)
+                    new_sentence = pattern.sub(
+                        lambda m, r=replacement: r[0].upper() + r[1:] if m.group(0)[0].isupper() else r,
+                        result_sentence
+                    )
+                    if new_sentence != result_sentence:
+                        changes.append(f'"{original_term}" → "{replacement}"')
+                        result_sentence = new_sentence
+            rewritten_sentences.append(result_sentence)
+
+        rewritten = " ".join(rewritten_sentences)
+        return rewritten, list(dict.fromkeys(changes))  # Deduplicate
 
 
 # ─────────────────────────────────────────────

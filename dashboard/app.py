@@ -553,7 +553,7 @@ with tab2:
 
 with tab3:
     st.markdown("### Ma'at Principles Reference")
-    st.markdown("LUMINARK audits against these active principles from the 42 Negative Confessions of Ma'at:")
+    st.markdown("LUMINARK audits against all **42 Negative Confessions of Ma'at**, mapped to AI safety violations:")
 
     from luminark.principles import PRINCIPLE_PROFILES
     rows = [
@@ -600,8 +600,9 @@ with tab3:
 
 st.markdown("""
 <div class="lum-footer">
-    🌿 LUMINARK Ethical AI Guardian v1.0 &nbsp;·&nbsp;
-    Bio-inspired · Ma'at-audited · Compassionate AI safety &nbsp;·&nbsp;
+    🌿 LUMINARK Ethical AI Guardian v1.1 &nbsp;·&nbsp;
+    Bio-inspired · Ma'at-audited · SAP-staged · Compassionate AI safety &nbsp;·&nbsp;
+    42 Principles Active &nbsp;·&nbsp;
     <a href="https://github.com/luminark/guardian" style="color:#58a6ff;">GitHub</a>
 </div>
 """, unsafe_allow_html=True)
