@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB:       luminark_db
+      POSTGRES_USER:     luminark
+      POSTGRES_PASSWORD: luminark_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luminark"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://luminark:luminark_dev_password@postgres:5432/luminark_db
+      REDIS_URL:    redis://redis:6379/0
+      JWT_SECRET_KEY: dev-secret-change-in-production-use-openssl-rand-hex-32
+      ALLOWED_ORIGINS: '["http://localhost:8501","http://localhost:3000"]'
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      LUMINARK_API_URL:         http://api:8000
+      LUMINARK_DASHBOARD_TOKEN: ""
+    depends_on:
+      - api
+    volumes:
+      - .:/app
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+
+volumes:
+  postgres_data:
+  redis_data:
