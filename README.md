@@ -20,7 +20,7 @@ Guardian does not independently determine whether a statement is true, verify ci
 
 The rewrite engine uses substitutions. Those substitutions can change meaning or remove necessary nuance, so every rewrite requires human review. Scores and stage labels are heuristic outputs, not calibrated probabilities or clinical, legal, or regulatory determinations.
 
-No independent benchmark, customer deployment, or measured detection accuracy is established by the repository materials reviewed so far. Do not describe this prototype as production-ready or as a substitute for human review or a specialized safety evaluation.
+No independent benchmark, customer deployment, or measured detection accuracy is established by the repository materials reviewed so far. HRV/polyvagal adjustments and cultural/domain modifiers are project-defined heuristics, not validated physiological, psychological, or clinical measurements. Do not describe this prototype as production-ready or as a substitute for human review or a specialized safety evaluation.
 
 ## Run locally
 
@@ -34,7 +34,7 @@ This records the project owner's account; it is not a legal determination of cop
 
 ## Licensing and provenance
 
-The project metadata refers to MIT, but the repository currently has no root `LICENSE` file. The license position therefore needs to be resolved before commercial distribution or third-party reuse. Do not rely on the README's former MIT badge or wording as proof of a complete license grant.
+The repository currently has no root `LICENSE` file and no license is declared in the package metadata. The license position therefore remains unresolved. Do not assume that the software is MIT-licensed or that it can be redistributed or commercially transferred without a rights review.
 
 The repository owner has disclosed that AI tools were used during development. Human-authored contributions, AI-generated portions, third-party code, dependencies, and model terms still require a provenance and rights review.
 
