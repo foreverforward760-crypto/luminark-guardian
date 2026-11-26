@@ -204,13 +204,13 @@ def create_app() -> FastAPI:
     settings = Settings()
 
     app = FastAPI(
-        title="LUMINARK OVERWATCH PRIME v2.0",
+        title="LUMINARK Guardian — Experimental Text Auditing Prototype",
         description=(
             "Experimental heuristic text-auditing prototype. Uses keyword and phrase rules, "
             "weighted scoring, and optional project-defined framework indices. It does not "
             "independently verify facts, citations, or hallucinations and is not a production safety system."
         ),
-        version="2.0.0",
+        version="1.0.0",
         lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
