@@ -24,7 +24,13 @@ No independent benchmark, customer deployment, or measured detection accuracy is
 
 ## Run locally
 
-Install dependencies from `requirements.txt`, then use the CLI, API, or dashboard entry points documented in the source tree. Review configuration and authentication before exposing any service to a network.
+Install dependencies from `requirements.txt`, then use the CLI, API, or dashboard entry points documented in the source tree. The development defaults are for local use only.
+
+### Production security requirements
+
+When `ENVIRONMENT=production`, startup rejects placeholder or short JWT secrets, weak configured API keys, placeholder database credentials, and non-HTTPS or wildcard browser origins. Redis must be installed and reachable at startup for token revocation and distributed rate limiting. The API disables documentation routes and debug reload in production. Bearer-token requests fail with HTTP 503 if the Redis revocation store is unavailable.
+
+Set a unique `JWT_SECRET_KEY` of at least 32 characters, a production `DATABASE_URL`, `REDIS_URL`, and explicit HTTPS `ALLOWED_ORIGINS`. Never expose the development defaults or commit credentials.
 
 ## Conceptual provenance
 
