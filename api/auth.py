@@ -103,12 +103,25 @@ async def _get_bearer_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     jti = payload.get("jti")
-    if jti and await redis.exists(f"blacklist:{jti}"):
+    if redis is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="token_revoked",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="token_revocation_store_unavailable",
         )
+    if jti:
+        try:
+            is_revoked = await redis.exists(f"blacklist:{jti}")
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="token_revocation_store_unavailable",
+            ) from exc
+        if is_revoked:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="token_revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_token")
