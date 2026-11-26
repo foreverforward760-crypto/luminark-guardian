@@ -1,5 +1,5 @@
 """
-LUMINARK OVERWATCH PRIME v2.0 — Production FastAPI Backend
+LUMINARK Guardian v1.0 — Experimental FastAPI Backend Prototype
 
 Features:
   • JWT auth with JTI blacklisting via Redis
@@ -30,6 +30,7 @@ import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -88,6 +89,29 @@ class Settings(BaseSettings):
             return set()
         return {k.strip() for k in self.api_keys.split(",") if k.strip()}
 
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if self.environment.lower() == "production":
+            weak_secret = (
+                len(self.jwt_secret_key) < 32
+                or self.jwt_secret_key.startswith("CHANGE_ME")
+                or self.jwt_secret_key.lower() in {"secret", "changeme", "password"}
+            )
+            if weak_secret:
+                raise ValueError("Production requires a unique JWT_SECRET_KEY of at least 32 characters.")
+            db_url = self.database_url.lower()
+            if any(value in db_url for value in ("changeme", "password", ":secret@", "replace_me")):
+                raise ValueError("Production DATABASE_URL contains a placeholder or weak credential.")
+            if not self.allowed_origins or any(
+                not origin.startswith("https://") for origin in self.allowed_origins
+            ):
+                raise ValueError("Production ALLOWED_ORIGINS must contain only explicit HTTPS origins.")
+            if any(len(key) < 32 for key in self.api_key_set):
+                raise ValueError("Every configured production API key must be at least 32 characters.")
+            if not self.redis_url:
+                raise ValueError("Production requires REDIS_URL for token revocation and rate limiting.")
+        return self
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Logging
@@ -139,13 +163,25 @@ async def lifespan(app: FastAPI):
     app.state.db_engine          = engine
     app.state.db_session_factory = session_factory
 
-    # Redis
+    # Redis is required in production for refresh-token blacklisting and
+    # distributed rate limiting. Development may use in-memory rate limiting,
+    # but bearer-token auth is unavailable without the revocation store.
     if aioredis:
         redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
-        app.state.redis = redis_client
+        try:
+            await redis_client.ping()
+            app.state.redis = redis_client
+        except Exception as exc:
+            await redis_client.aclose()
+            app.state.redis = None
+            if settings.environment == "production":
+                raise RuntimeError("Redis must be reachable in production.") from exc
+            logger.warning("redis_unavailable", msg="Bearer-token revocation disabled in local development")
     else:
         app.state.redis = None
-        logger.warning("redis_unavailable", msg="Rate limiting and token blacklisting disabled")
+        if settings.environment == "production":
+            raise RuntimeError("The redis package is required in production.")
+        logger.warning("redis_unavailable", msg="Bearer-token revocation disabled in local development")
 
     # Extended engine (CPU-bound; initialised once, shared across requests)
     app.state.engine = ExtendedEngine()
@@ -170,8 +206,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="LUMINARK OVERWATCH PRIME v2.0",
         description=(
-            "Production-grade AI ethics auditor. Bio-inspired • Ma'at-audited • "
-            "SAP-staged • Extended engine: NSDT, CITI, Polyvagal, Cultural, Fractal."
+            "Experimental heuristic text-auditing prototype. Uses keyword and phrase rules, "
+            "weighted scoring, and optional project-defined framework indices. It does not "
+            "independently verify facts, citations, or hallucinations and is not a production safety system."
         ),
         version="2.0.0",
         lifespan=lifespan,
@@ -187,14 +224,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS", "HEAD"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
 
     # Rate limiter
     limiter = Limiter(
         key_func=get_remote_address,
-        storage_uri=settings.redis_url,
+        storage_uri=settings.redis_url if settings.environment == "production" else "memory://",
         default_limits=[settings.rate_limit_default],
     )
     app.state.limiter = limiter
