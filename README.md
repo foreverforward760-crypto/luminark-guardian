@@ -26,6 +26,12 @@ No independent benchmark, customer deployment, or measured detection accuracy is
 
 Install dependencies from `requirements.txt`, then use the CLI, API, or dashboard entry points documented in the source tree. Review configuration and authentication before exposing any service to a network.
 
+## Conceptual provenance
+
+The project owner states that the underlying concepts, product idea, and 0-9-0 / SAP framework applications in this repository originated with him. AI systems generated the implementation code and suggested technical mechanisms used to express those concepts. NSDT and the Container Rule were introduced by AI as supporting implementation mechanisms within the owner's framework, not as independent conceptual origins.
+
+This records the project owner's account; it is not a legal determination of copyright ownership, inventorship, or exclusive rights.
+
 ## Licensing and provenance
 
 The project metadata refers to MIT, but the repository currently has no root `LICENSE` file. The license position therefore needs to be resolved before commercial distribution or third-party reuse. Do not rely on the README's former MIT badge or wording as proof of a complete license grant.
