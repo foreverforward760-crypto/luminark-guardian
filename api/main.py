@@ -91,7 +91,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self):
-        if self.environment.lower() == "production":
+        self.environment = self.environment.lower()
+        if self.environment == "production":
             weak_secret = (
                 len(self.jwt_secret_key) < 32
                 or self.jwt_secret_key.startswith("CHANGE_ME")
@@ -212,8 +213,9 @@ def create_app() -> FastAPI:
         ),
         version="1.0.0",
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=None if settings.environment == "production" else "/docs",
+        redoc_url=None if settings.environment == "production" else "/redoc",
+        openapi_url=None if settings.environment == "production" else "/openapi.json",
     )
 
     app.state.settings = settings
@@ -508,11 +510,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 def run() -> None:
     import uvicorn
+    settings = app.state.settings
+    production = settings.environment == "production"
     uvicorn.run(
         "api.main:app",
-        host="0.0.0.0",
+        host="0.0.0.0" if production else "127.0.0.1",
         port=8000,
-        reload=True,
+        reload=not production,
         log_config=None,  # structlog handles all logging
     )
 
